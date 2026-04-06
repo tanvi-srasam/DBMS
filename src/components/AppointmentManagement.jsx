@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CalendarDays, CheckCircle } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function AppointmentManagement() {
   const [appointments, setAppointments] = useState([]);
@@ -9,44 +10,52 @@ export default function AppointmentManagement() {
     patient_id: '', doctor_id: '', date: '', time: '', reason: ''
   });
 
-  const fetchAppointments = () => {
-    fetch('/api/appointments')
-      .then(res => res.json())
-      .then(data => setAppointments(data))
-      .catch(err => console.error(err));
+  const fetchAppointments = async () => {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*, patients(name), doctors(name)')
+      .order('date', { ascending: false })
+      .order('time', { ascending: false });
+      
+    if (error) {
+      console.error(error);
+    } else {
+      const formattedData = (data || []).map(appt => ({
+        ...appt,
+        patient_name: appt.patients?.name || 'Unknown',
+        doctor_name: appt.doctors?.name || 'Unknown'
+      }));
+      setAppointments(formattedData);
+    }
   };
 
   useEffect(() => {
     fetchAppointments();
     
     // Fetch dropdown data
-    fetch('/api/patients').then(res => res.json()).then(setPatients);
-    fetch('/api/doctors').then(res => res.json()).then(setDoctors);
+    supabase.from('patients').select('*').then(({ data }) => setPatients(data || []));
+    supabase.from('doctors').select('*').then(({ data }) => setDoctors(data || []));
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    fetch('/api/appointments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    })
-    .then(res => res.json())
-    .then(() => {
+    const { error } = await supabase.from('appointments').insert([{
+      ...formData,
+      status: 'Scheduled'
+    }]);
+    
+    if (error) {
+      console.error(error);
+    } else {
       fetchAppointments();
       setFormData({ patient_id: '', doctor_id: '', date: '', time: '', reason: '' });
-    })
-    .catch(err => console.error(err));
+    }
   };
 
-  const completeAppointment = (id) => {
-    fetch(`/api/appointments/${id}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'Completed' })
-    })
-    .then(() => fetchAppointments())
-    .catch(err => console.error(err));
+  const completeAppointment = async (id) => {
+    const { error } = await supabase.from('appointments').update({ status: 'Completed' }).eq('id', id);
+    if (error) console.error(error);
+    else fetchAppointments();
   };
 
   return (

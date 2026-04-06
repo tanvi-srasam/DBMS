@@ -1,25 +1,33 @@
 import { useState, useEffect } from 'react';
 import { Users, UserRoundCog, CalendarCheck } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ patients: 0, doctors: 0, appointments: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/stats')
-      .then(res => res.json())
-      .then(data => {
+    const fetchStats = async () => {
+      try {
+        const [patientsRes, doctorsRes, appointmentsRes] = await Promise.all([
+          supabase.from('patients').select('*', { count: 'exact', head: true }),
+          supabase.from('doctors').select('*', { count: 'exact', head: true }),
+          supabase.from('appointments').select('*', { count: 'exact', head: true })
+        ]);
+
         setStats({
-          patients: data.patients || 0,
-          doctors: data.doctors || 0,
-          appointments: data.appointments || 0
+          patients: patientsRes.count || 0,
+          doctors: doctorsRes.count || 0,
+          appointments: appointmentsRes.count || 0
         });
-        setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error('Failed to fetch stats:', err);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchStats();
   }, []);
 
   return (

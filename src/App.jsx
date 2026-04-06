@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, UserRoundCog, CalendarDays, Activity } from 'lucide-react';
+import { LayoutDashboard, Users, UserRoundCog, CalendarDays, Activity, Database } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import PatientManagement from './components/PatientManagement';
 import DoctorManagement from './components/DoctorManagement';
 import AppointmentManagement from './components/AppointmentManagement';
+import DatabaseViewer from './components/DatabaseViewer';
 
 function App() {
   const location = useLocation();
@@ -14,6 +15,7 @@ function App() {
     { name: 'Patients', path: '/patients', icon: Users },
     { name: 'Doctors', path: '/doctors', icon: UserRoundCog },
     { name: 'Appointments', path: '/appointments', icon: CalendarDays },
+    { name: 'Database', path: '/database', icon: Database },
   ];
 
   return (
@@ -50,6 +52,7 @@ function App() {
           <Route path="/patients" element={<PatientManagement />} />
           <Route path="/doctors" element={<DoctorManagement />} />
           <Route path="/appointments" element={<AppointmentManagement />} />
+          <Route path="/database" element={<DatabaseViewer />} />
         </Routes>
       </main>
     </div>

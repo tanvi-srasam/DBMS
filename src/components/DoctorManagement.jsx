@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserRoundCog, Trash2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function DoctorManagement() {
   const [doctors, setDoctors] = useState([]);
@@ -7,37 +8,32 @@ export default function DoctorManagement() {
     name: '', specialization: '', contact: '', email: '', availability: ''
   });
 
-  const fetchDoctors = () => {
-    fetch('/api/doctors')
-      .then(res => res.json())
-      .then(data => setDoctors(data))
-      .catch(err => console.error(err));
+  const fetchDoctors = async () => {
+    const { data, error } = await supabase.from('doctors').select('*').order('id', { ascending: false });
+    if (error) console.error(error);
+    else setDoctors(data || []);
   };
 
   useEffect(() => {
     fetchDoctors();
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    fetch('/api/doctors', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    })
-    .then(res => res.json())
-    .then(() => {
+    const { error } = await supabase.from('doctors').insert([formData]);
+    if (error) {
+      console.error(error);
+    } else {
       fetchDoctors();
       setFormData({ name: '', specialization: '', contact: '', email: '', availability: '' });
-    })
-    .catch(err => console.error(err));
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this doctor?')) {
-      fetch(`/api/doctors/${id}`, { method: 'DELETE' })
-        .then(() => fetchDoctors())
-        .catch(err => console.error(err));
+      const { error } = await supabase.from('doctors').delete().eq('id', id);
+      if (error) console.error(error);
+      else fetchDoctors();
     }
   };
 
